@@ -16,18 +16,28 @@ export type Link = {
 
 export const links: Link[] = [
   {
-    name: "Example One",
-    verb: "Visit",
-    url: "https://example.com",
+    name: "Discord",
+    verb: "Join",
+    url: "https://discord.gg/CUuAY7PYbt",
   },
   {
-    name: "Example Two",
-    verb: "Read",
-    url: "https://example.org",
+    name: "YouTube",
+    verb: "Watch",
+    url: "https://www.youtube.com/@SethHaskell",
   },
   {
-    name: "Example Three",
-    verb: "Explore",
-    url: "https://example.net",
+    name: "YouTube Live",
+    verb: "Watch",
+    url: "https://www.youtube.com/@SethHaskellLive",
+  },
+  {
+    name: "Twitch",
+    verb: "Chat",
+    url: "https://twitch.tv/sethhaskell",
+  },
+  {
+    name: "Stream Achievements",
+    verb: "Monitor",
+    url: "https://docs.google.com/spreadsheets/d/1zIik-mvDE7gpzniNk3TZisPlVCBe2htASHVdHJqibvs",
   },
 ];
