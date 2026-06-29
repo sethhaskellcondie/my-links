@@ -1,11 +1,32 @@
+/* ===========================================================================
+   CRT Title Screen — a retro "NES title screen" link-in-bio landing page.
+   The whole UI is one CRT television: brushed-metal bezel, a flickering
+   picture tube with scanlines + vignette, an NES stripe, a start menu of
+   links, and a POWER button that collapses / warms up the picture.
+   Built in vanilla CSS to match the project's stack. See main.ts for the
+   small amount of state (power on/off, boot, channel) that drives it.
+   =========================================================================== */
+
 :root {
-  color-scheme: light dark;
-  --bg: #0f1115;
-  --fg: #e7e9ee;
-  --muted: #9aa1ad;
-  --card: #1a1d24;
-  --accent: #5b9dff;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Screen geometry — the shutter half-height is derived from this so the
+     power-off "pinch" always meets at the exact centre. */
+  --screen-min-height: 660px;
+
+  /* Palette (see the handoff design tokens) */
+  --shell: #0c0b0a;
+  --near-black: #050504;
+  --picture-base: #2b2825;
+  --nes-red: #c52817;
+  --stripe-silver: #c3c3c5;
+  --title: #cfcfd1;
+  --link-label: #e8e6e2;
+  --link-action: #9d9a98;
+  --select: #8a857d;
+  --channel-green: #36ff5d;
+
+  --font-pixel: "Press Start 2P", monospace;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-cond: "Saira Condensed", sans-serif;
 }
 
 * {
@@ -14,84 +35,489 @@
 
 body {
   margin: 0;
+}
+
+/* ---- Page -------------------------------------------------------------- */
+.page {
   min-height: 100vh;
-  background: var(--bg);
-  color: var(--fg);
-}
-
-#app {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 3rem 1.5rem;
-}
-
-.page-header {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 2.5rem;
-  letter-spacing: -0.02em;
-}
-
-.count {
-  margin: 0.25rem 0 0;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.empty {
-  text-align: center;
-  color: var(--muted);
-}
-
-.grid {
-  display: grid;
-  gap: 1rem;
-  /* Responsive by default: as many columns as fit, min 220px each. */
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-/* With only one link, keep it from stretching across the whole row. */
-.grid[data-count="1"] {
-  grid-template-columns: minmax(220px, 360px);
+  display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 40px 24px;
+  background: radial-gradient(120% 90% at 50% 30%, #1a1815, #0c0b0a 70%);
 }
 
-.card {
+/* ---- TV shell ---------------------------------------------------------- */
+.tv {
+  width: 940px;
+  max-width: 100%;
+  background: var(--shell);
+  border-radius: 30px;
+  padding: 22px 22px 16px;
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.7);
+}
+
+/* ---- Screen ------------------------------------------------------------ */
+.screen {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  border-radius: 16px;
+  min-height: var(--screen-min-height);
+  background: var(--near-black);
+  box-shadow:
+    inset 0 0 90px rgba(0, 0, 0, 0.85),
+    inset 0 0 24px rgba(197, 40, 23, 0.07);
+  animation: flicker 7s linear infinite;
+}
+
+/* ---- Picture tube ------------------------------------------------------ */
+.tube {
+  position: relative;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: var(--card);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  background-color: var(--picture-base);
+  background-image: url(/textures/brushed-title.png);
+  background-size: cover;
+  background-position: center;
+  filter: brightness(1);
+  transition: filter 0.3s ease;
+}
+/* Brightness blooms up as the picture collapses on power-off. */
+.tv.is-off .tube {
+  filter: brightness(1.55);
 }
 
-.card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+.scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    rgba(0, 0, 0, 0) 0 2px,
+    rgba(0, 0, 0, 0.22) 2px 3px
+  );
+  background-size: 100% 6px;
+  animation: scan 0.6s steps(2) infinite;
 }
 
-.card__name {
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 16px;
+  background: radial-gradient(
+    125% 95% at 50% 45%,
+    transparent 58%,
+    rgba(0, 0, 0, 0.6)
+  );
+}
+
+/* ---- Hero (title + stripe + controller) -------------------------------- */
+.hero {
+  position: relative;
+  z-index: 2;
+  padding: 46px 0 0;
+}
+
+.hero__title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-pixel);
+  font-size: clamp(28px, 8vw, 52px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 3px;
+  text-align: right;
+  padding: 0 44px;
+  color: var(--title);
+  text-shadow:
+    0 0 2px rgba(255, 255, 255, 0.6),
+    0 0 16px rgba(255, 255, 255, 0.28),
+    0 0 34px rgba(197, 40, 23, 0.22);
 }
 
-.card__action {
-  margin-top: auto;
-  align-self: flex-start;
-  padding: 0.5rem 1rem;
-  background: var(--accent);
-  color: #0b1220;
-  font-weight: 600;
+/* NES stripe + controller — a single baked artwork, full-bleed across the
+   picture tube. Intrinsic aspect ratio (1920×175) sets its own height. */
+.stripe {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 26px;
+  /* Keep a hint of the CRT bloom the CSS bands used to emit. */
+  filter: drop-shadow(0 0 16px rgba(197, 40, 23, 0.35));
+}
+
+/* ---- Start menu -------------------------------------------------------- */
+.menu {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 34px 44px 0;
+}
+
+.menu__select {
+  margin-bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--select);
+}
+
+.menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  max-width: 620px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: 6px;
   text-decoration: none;
-  border-radius: 8px;
+  transition:
+    background 0.14s,
+    transform 0.14s,
+    box-shadow 0.14s;
+}
+.link:hover,
+.link:focus-visible {
+  outline: none;
+  background: rgba(197, 40, 23, 0.28);
+  transform: translateX(10px);
+  box-shadow:
+    inset 4px 0 0 var(--nes-red),
+    0 0 22px rgba(197, 40, 23, 0.3);
 }
 
-.card__action:hover {
-  filter: brightness(1.1);
+.link__cursor {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--nes-red);
+  text-shadow: 0 0 10px rgba(197, 40, 23, 0.8);
+}
+
+.link__label {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--link-label);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+
+.link__leader {
+  flex: 1;
+  border-bottom: 2px dotted #4a443c;
+  margin-bottom: 5px;
+}
+
+.link__action {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--link-action);
+  white-space: nowrap;
+}
+
+.menu__start {
+  margin-top: 38px;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--nes-red);
+  text-shadow: 0 0 16px rgba(197, 40, 23, 0.85);
+  animation: blink 1.06s steps(1) infinite;
+}
+
+.menu__empty {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  line-height: 1.8;
+  text-align: center;
+  color: var(--select);
+}
+
+/* ---- Power-state overlays (inside the screen) -------------------------- */
+.shutter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  height: 0;
+  background: var(--near-black);
+  transition: height 0.32s ease;
+  pointer-events: none;
+}
+.shutter--top {
+  top: 0;
+}
+.shutter--bottom {
+  bottom: 0;
+}
+.tv.is-off .shutter {
+  height: calc(var(--screen-min-height) / 2);
+}
+
+.pinch {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: calc(50% - 2px);
+  z-index: 8;
+  height: 4px;
+  background: #fff;
+  box-shadow:
+    0 0 18px 3px rgba(255, 255, 255, 0.8),
+    0 0 34px rgba(197, 40, 23, 0.55);
+  opacity: 0;
+  transition: opacity 0.25s ease 0.12s;
+  pointer-events: none;
+}
+.tv.is-off .pinch {
+  opacity: 1;
+}
+
+.fade {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  background: var(--near-black);
+  opacity: 0;
+  pointer-events: none;
+  /* Default = power-ON: slow 3s warm-up dissolve. */
+  transition: opacity 3s ease 0s;
+}
+.tv.is-off .fade {
+  opacity: 1;
+  /* Power-OFF: snap to black just after the shutters meet. */
+  transition: opacity 0.25s ease 0.32s;
+}
+
+.waves {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      rgba(255, 255, 255, 0.05) 2px,
+      transparent 6px
+    ),
+    linear-gradient(
+      0deg,
+      transparent 38%,
+      rgba(200, 215, 255, 0.18) 50%,
+      transparent 62%
+    );
+  background-size:
+    100% 6px,
+    100% 55%;
+  animation: roll 1.1s linear infinite;
+}
+.tv.is-booting .waves {
+  opacity: 0.6;
+}
+
+.channel {
+  position: absolute;
+  bottom: 34px;
+  right: 42px;
+  z-index: 11;
+  pointer-events: none;
+  font-family: var(--font-pixel);
+  font-size: 38px;
+  letter-spacing: 4px;
+  color: var(--channel-green);
+  text-shadow:
+    0 0 10px rgba(54, 255, 93, 0.85),
+    0 0 24px rgba(54, 255, 93, 0.45);
+  opacity: 0;
+  /* No transition — instant on, instant cut. */
+}
+.tv.is-tuned .channel {
+  opacity: 1;
+}
+
+/* ---- Bezel chin -------------------------------------------------------- */
+.chin {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding: 0 10px;
+}
+
+.brand {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #5a554d;
+}
+
+.power {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 13px 6px 9px;
+  background: #16130f;
+  border: 1px solid #2a2622;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.power:focus-visible {
+  outline: 2px solid var(--nes-red);
+  outline-offset: 2px;
+}
+
+.power__led {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  background: var(--nes-red);
+  box-shadow: 0 0 10px rgba(197, 40, 23, 0.9);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.tv.is-off .power__led {
+  background: #2a2622;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.power__label {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6a655d;
+}
+
+/* ---- Keyframes --------------------------------------------------------- */
+@keyframes flicker {
+  0%,
+  96%,
+  100% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0.88;
+  }
+  98% {
+    opacity: 1;
+  }
+  98.6% {
+    opacity: 0.92;
+  }
+}
+@keyframes scan {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 6px;
+  }
+}
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes roll {
+  from {
+    background-position:
+      0 0,
+      0 0;
+  }
+  to {
+    background-position:
+      0 60px,
+      0 -120%;
+  }
+}
+
+/* ---- Responsive -------------------------------------------------------- */
+@media (max-width: 680px) {
+  :root {
+    --screen-min-height: 560px;
+  }
+  .hero {
+    padding-top: 34px;
+  }
+  .hero__title {
+    padding: 0 20px;
+  }
+  .menu {
+    padding: 28px 20px 0;
+  }
+  .link {
+    gap: 10px;
+    padding: 10px;
+  }
+  .link__label {
+    font-size: 13px;
+  }
+  .link__action {
+    font-size: 13px;
+  }
+  .menu__start {
+    font-size: 18px;
+  }
+  .channel {
+    font-size: 28px;
+    bottom: 24px;
+    right: 24px;
+  }
+}
+
+/* ---- Reduced motion ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .screen,
+  .scanlines,
+  .menu__start,
+  .waves {
+    animation: none !important;
+  }
+  /* Power transitions become an instant cut. */
+  .shutter,
+  .pinch,
+  .fade,
+  .tube {
+    transition: none !important;
+  }
+  .waves {
+    display: none;
+  }
 }
