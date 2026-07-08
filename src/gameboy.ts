@@ -3,7 +3,7 @@
 // handoff (design_handoff_retro_crt_mobile/README.md, concept 1B).
 
 import { el } from "./dom";
-import { links, type Link } from "./links";
+import { hiddenLink, links, type Link } from "./links";
 import { wireQrTrigger } from "./qr";
 
 /**
@@ -43,9 +43,12 @@ function createMenu(rows: HTMLAnchorElement[]): HTMLDivElement {
   const name = el("div", "gb__name");
   name.textContent = "Seth Haskell";
 
-  const bars = el("div", "gb__bars");
+  // Green-recolored version of the TV's baked stripe + controller artwork.
+  const bars = el("img", "gb__bars", {
+    src: "/textures/controller-color-bars-gb.png",
+    alt: "",
+  });
   bars.setAttribute("aria-hidden", "true");
-  for (let i = 0; i < 3; i++) bars.append(el("i", "gb__bar"));
 
   const select = el("div", "gb__select");
   select.textContent = "— Select —";
@@ -54,7 +57,12 @@ function createMenu(rows: HTMLAnchorElement[]): HTMLDivElement {
   list.append(...rows);
 
   const start = el("div", "gb__start");
-  start.textContent = "▶ Press Start";
+  const startCursor = el("span", "gb__start-cursor");
+  startCursor.textContent = "▶";
+  startCursor.setAttribute("aria-hidden", "true");
+  const startLabel = el("span");
+  startLabel.textContent = "Press Start";
+  start.append(startCursor, startLabel);
 
   menu.append(name, bars, select, list, start);
   return menu;
@@ -226,6 +234,14 @@ export function createGameboy(): HTMLDivElement {
     if (phase === "off") powerOn();
     else powerOff();
   };
+
+  // Easter egg: PRESS START opens the unlisted "Hidden" link. Deliberately
+  // no hover state — it should not look clickable.
+  menu.querySelector(".gb__start")?.addEventListener("click", () => {
+    if (phase === "on" && hiddenLink) {
+      window.open(hiddenLink.url, "_blank", "noopener,noreferrer");
+    }
+  });
 
   powerSwitch.addEventListener("click", togglePower);
   dpadUp.addEventListener("click", () => moveSel(-1));

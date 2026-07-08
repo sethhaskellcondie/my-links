@@ -1,7 +1,7 @@
 import "./style.css";
 import { el } from "./dom";
 import { createGameboy } from "./gameboy";
-import { links, type Link } from "./links";
+import { hiddenLink, links, type Link } from "./links";
 import { createQrSlot, wireQrTrigger } from "./qr";
 
 const app = document.querySelector<HTMLDivElement>("#app");
@@ -67,7 +67,17 @@ function createMenu(): HTMLDivElement {
   menu.append(list);
 
   const start = el("div", "menu__start");
-  start.textContent = "▶ PRESS START"; // ▶ PRESS START
+  const startCursor = el("span", "menu__start-cursor");
+  startCursor.textContent = "▶";
+  startCursor.setAttribute("aria-hidden", "true");
+  const startLabel = el("span");
+  startLabel.textContent = "PRESS START";
+  start.append(startCursor, startLabel);
+  // Easter egg: PRESS START opens the unlisted "Hidden" link. Deliberately
+  // no hover state — it should not look clickable.
+  start.addEventListener("click", () => {
+    if (hiddenLink) window.open(hiddenLink.url, "_blank", "noopener,noreferrer");
+  });
   menu.append(start);
 
   return menu;

@@ -176,6 +176,12 @@ body {
   padding: 34px 44px 0;
 }
 
+/* While the set is off the picture is covered but still present — don't let
+   clicks reach the invisible menu. */
+.tv.is-off .menu {
+  pointer-events: none;
+}
+
 .menu__select {
   margin-bottom: 14px;
   font-family: var(--font-mono);
@@ -243,6 +249,10 @@ body {
 }
 
 .menu__start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
   margin-top: 38px;
   font-family: var(--font-pixel);
   font-size: 22px;
@@ -250,6 +260,12 @@ body {
   color: var(--nes-red);
   text-shadow: 0 0 16px rgba(197, 40, 23, 0.85);
   animation: blink 1.06s steps(1) infinite;
+}
+
+/* Centre the cursor glyph on the text's midline (it renders from a fallback
+   font and otherwise sits too low on the baseline). */
+.menu__start-cursor {
+  font-size: 0.8em;
 }
 
 .menu__empty {
@@ -642,6 +658,11 @@ body {
   padding: 18px 14px 14px;
   color: var(--gb-darkest);
 }
+/* The boot/shutdown covers are click-through — block the menu beneath them
+   whenever the screen isn't actually on. */
+.gameboy:not([data-phase="on"]) .gb__menu {
+  pointer-events: none;
+}
 
 .gb__name {
   font-family: var(--font-silk);
@@ -653,25 +674,12 @@ body {
   white-space: nowrap;
 }
 
+/* Full-bleed across the screen, matching the TV's stripe treatment. */
 .gb__bars {
-  margin-top: 12px;
-}
-.gb__bar {
   display: block;
-}
-.gb__bar:nth-child(1) {
-  height: 6px;
-  background: var(--gb-darkest);
-}
-.gb__bar:nth-child(2) {
-  height: 4px;
-  margin-top: 3px;
-  background: var(--gb-dark);
-}
-.gb__bar:nth-child(3) {
-  height: 4px;
-  margin-top: 3px;
-  background: var(--gb-light);
+  width: calc(100% + 28px);
+  height: auto;
+  margin: 12px -14px 0;
 }
 
 .gb__select {
@@ -740,14 +748,20 @@ body {
 }
 
 .gb__start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
   margin-top: auto;
   padding-top: 18px;
-  text-align: center;
   font-family: var(--font-silk);
   font-weight: 700;
   font-size: 13px;
   text-transform: uppercase;
   animation: gbBlink 1.2s steps(1) infinite;
+}
+.gb__start-cursor {
+  font-size: 0.8em;
 }
 
 /* ---- Scanlines + vignette ------------------------------------------------ */
