@@ -4,6 +4,7 @@
 
 import { el } from "./dom";
 import { links, type Link } from "./links";
+import { wireQrTrigger } from "./qr";
 
 /**
  * Power state machine: off → booting → revealing → on, and on → poweringOff
@@ -64,6 +65,7 @@ function createWordmark(): HTMLDivElement {
 
   const nin = el("span", "gb__nin");
   nin.textContent = "Ninfendo";
+  wireQrTrigger(nin);
 
   const doy = el("span", "gb__doy");
   doy.textContent = "GAME DOY";

@@ -2,6 +2,7 @@ import "./style.css";
 import { el } from "./dom";
 import { createGameboy } from "./gameboy";
 import { links, type Link } from "./links";
+import { createQrSlot, wireQrTrigger } from "./qr";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 
@@ -171,6 +172,7 @@ function createChin(power: HTMLButtonElement): HTMLDivElement {
 
   const brand = el("span", "brand");
   brand.textContent = "SANY - Trinitran";
+  wireQrTrigger(brand);
 
   chin.append(brand, power);
   return chin;
@@ -182,6 +184,7 @@ function createTopBar(power: HTMLButtonElement): HTMLDivElement {
 
   const brand = el("span", "topbar__brand");
   brand.textContent = "SANY";
+  wireQrTrigger(brand);
 
   const dots = el("span", "topbar__dots");
   dots.setAttribute("aria-hidden", "true");
@@ -225,7 +228,7 @@ function createKnobs(): HTMLDivElement {
  */
 function renderHidden(root: HTMLDivElement): void {
   const page = el("div", "page page--hidden");
-  page.append(createGameboy());
+  page.append(createQrSlot(), createGameboy());
   root.append(page);
 }
 
@@ -249,7 +252,7 @@ function render(root: HTMLDivElement): void {
   );
   wirePower(tv, [chinPower, topPower]);
 
-  page.append(tv);
+  page.append(createQrSlot(), tv);
   root.append(page);
 }
 

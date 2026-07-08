@@ -49,6 +49,7 @@ body {
 .page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px 24px;
@@ -503,6 +504,24 @@ body {
     bottom: 24px;
     right: 24px;
   }
+}
+
+/* ---- QR code (click the SANY / Ninfendo wordmarks to cycle) -------------
+   Sits in the page flow above the device shell. */
+.qr-trigger {
+  cursor: pointer;
+}
+
+.qr-slot[hidden] {
+  display: none;
+}
+
+.qr-slot img {
+  display: block;
+  width: min(32vw, 150px);
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
 }
 
 /* ---- Hidden page (1-in-10 roll on page load) ----------------------------
