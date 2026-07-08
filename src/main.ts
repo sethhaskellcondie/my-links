@@ -1,19 +1,9 @@
 import "./style.css";
+import { el } from "./dom";
+import { createGameboy } from "./gameboy";
 import { links, type Link } from "./links";
 
 const app = document.querySelector<HTMLDivElement>("#app");
-
-/** Tiny helper: make an element with a class and optional children/props. */
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className = "",
-  props: Partial<HTMLElementTagNameMap[K]> = {},
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  Object.assign(node, props);
-  return node;
-}
 
 /** One row in the start menu — derived straight from a Link in links.ts. */
 function createLinkRow(link: Link): HTMLAnchorElement {
@@ -89,7 +79,7 @@ function createMenu(): HTMLDivElement {
  *   tuned   -> the green "CH 03" indicator (5s, instant cut)
  * State lives as classes on `tv`; CSS does the rest.
  */
-function wirePower(tv: HTMLDivElement, button: HTMLButtonElement): void {
+function wirePower(tv: HTMLDivElement, buttons: HTMLButtonElement[]): void {
   let on = true;
   let bootTimer: number | undefined;
   let chTimer: number | undefined;
@@ -103,7 +93,7 @@ function wirePower(tv: HTMLDivElement, button: HTMLButtonElement): void {
     tv.classList.toggle("is-off", !on);
   };
 
-  button.addEventListener("click", () => {
+  const toggle = () => {
     on = !on;
     clearTimers();
     apply();
@@ -118,7 +108,9 @@ function wirePower(tv: HTMLDivElement, button: HTMLButtonElement): void {
     } else {
       tv.classList.remove("is-booting", "is-tuned");
     }
-  });
+  };
+
+  buttons.forEach((button) => button.addEventListener("click", toggle));
 
   // Tidy up if the node ever leaves the document.
   window.addEventListener("pagehide", clearTimers);
@@ -159,27 +151,82 @@ function createScreen(): HTMLDivElement {
   return screen;
 }
 
-function createChin(tv: HTMLDivElement): HTMLDivElement {
-  const chin = el("div", "chin");
-
-  const brand = el("span", "brand");
-  brand.textContent = "SANY - Trinitran";
-
+function createPowerButton(): HTMLButtonElement {
   const power = el("button", "power", { type: "button" });
   power.setAttribute("aria-label", "Power");
 
   const led = el("span", "power__led");
-  led.textContent = "⏻"; // ⏻
   led.setAttribute("aria-hidden", "true");
 
   const label = el("span", "power__label");
   label.textContent = "Power";
 
   power.append(led, label);
-  chin.append(brand, power);
+  return power;
+}
 
-  wirePower(tv, power);
+/** Landscape bezel: brand plate + power button under the screen. */
+function createChin(power: HTMLButtonElement): HTMLDivElement {
+  const chin = el("div", "chin");
+
+  const brand = el("span", "brand");
+  brand.textContent = "SANY - Trinitran";
+
+  chin.append(brand, power);
   return chin;
+}
+
+/** Portrait bezel: brand, speaker dots, and power above the screen. */
+function createTopBar(power: HTMLButtonElement): HTMLDivElement {
+  const bar = el("div", "topbar");
+
+  const brand = el("span", "topbar__brand");
+  brand.textContent = "SANY";
+
+  const dots = el("span", "topbar__dots");
+  dots.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < 4; i++) dots.append(el("i", "topbar__dot"));
+
+  bar.append(brand, dots, power);
+  return bar;
+}
+
+/** Portrait only: the aerial poking out of the top-right corner. */
+function createAntenna(): HTMLDivElement {
+  const antenna = el("div", "antenna");
+  antenna.setAttribute("aria-hidden", "true");
+  return antenna;
+}
+
+/** Portrait only: decorative TUNE / VOL knobs with the model name between. */
+function createKnobs(): HTMLDivElement {
+  const knobs = el("div", "knobs");
+  knobs.setAttribute("aria-hidden", "true");
+
+  const makeKnob = (name: string) => {
+    const group = el("div", "knob-group");
+    const dial = el("span", "knob");
+    const label = el("span", "knob__label");
+    label.textContent = name;
+    group.append(dial, label);
+    return group;
+  };
+
+  const model = el("span", "knobs__model");
+  model.textContent = "FD - 42 Watchmaan";
+
+  knobs.append(makeKnob("Tune"), model, makeKnob("Vol"));
+  return knobs;
+}
+
+/**
+ * The hidden page — appended alongside the TV. CSS swaps it in for the
+ * portrait (skinny) view only; landscape always shows the TV.
+ */
+function renderHidden(root: HTMLDivElement): void {
+  const page = el("div", "page page--hidden");
+  page.append(createGameboy());
+  root.append(page);
 }
 
 function render(root: HTMLDivElement): void {
@@ -187,11 +234,33 @@ function render(root: HTMLDivElement): void {
 
   const page = el("div", "page");
   const tv = el("div", "tv");
-  tv.append(createScreen(), createChin(tv));
+
+  // Two power buttons — only one is visible at a time (chin in landscape,
+  // top bar in portrait) but both drive the same CRT state machine.
+  const chinPower = createPowerButton();
+  const topPower = createPowerButton();
+
+  tv.append(
+    createAntenna(),
+    createTopBar(topPower),
+    createScreen(),
+    createChin(chinPower),
+    createKnobs(),
+  );
+  wirePower(tv, [chinPower, topPower]);
+
   page.append(tv);
   root.append(page);
 }
 
 if (app) {
   render(app);
+
+  // Roll 1–10 on every visit; a 10 swaps the portrait view for the hidden
+  // page. The wide view renders as normal regardless of the roll.
+  const roll = Math.floor(Math.random() * 10) + 1;
+  if (roll === 10) {
+    app.classList.add("has-hidden");
+    renderHidden(app);
+  }
 }
