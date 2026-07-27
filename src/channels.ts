@@ -15,9 +15,25 @@ export type ChannelContent =
   | { channel: NumberedChannel; type: "text"; text: string };
 
 export const channels: ChannelContent[] = [
-  { channel: 3, type: "links" },
-  { channel: 4, type: "text", text: "Shame on the industry for being so anti-consumer. We deserve a physical media option!" },
-  { channel: 5, type: "text", text: "I'm working on launching a new way to display my collection, I'm excited to share it with you!" },
+
+    {
+        channel: 3,
+        type: "links"
+    },
+    {
+        channel: 4,
+        type: "text",
+        text: `Shame on the industry for being so anti-consumer. 
+        
+        We deserve a physical media option!`
+    },
+    {
+        channel: 5,
+        type: "text",
+        text: `I'm working on launching a new way to display my collection, I'm excited to share it with you!
+        
+        Check Discord for details!`
+    },
 ];
 
 /** What channel `value` is showing. Unlisted channels fall back to the links. */

@@ -305,6 +305,9 @@ body {
   font-size: clamp(14px, 2.6vw, 22px);
   line-height: 1.9;
   text-align: center;
+  /* `\n` in a channel's text breaks the line; long lines still wrap on their
+     own, and indentation in channels.ts is collapsed rather than rendered. */
+  white-space: pre-line;
   color: var(--link-label);
   text-shadow:
     0 0 8px rgba(255, 255, 255, 0.18),
