@@ -1,5 +1,5 @@
 import "./style.css";
-import { initAudio } from "./audio";
+import { initAudio, playTvOff } from "./audio";
 import { getChannel, setChannel } from "./channel";
 import { el } from "./dom";
 import { createGameboy } from "./gameboy";
@@ -118,6 +118,7 @@ function wirePower(tv: HTMLDivElement, buttons: HTMLButtonElement[]): void {
       chTimer = window.setTimeout(() => tv.classList.remove("is-tuned"), 5000);
     } else {
       tv.classList.remove("is-booting", "is-tuned");
+      playTvOff();
     }
   };
 
