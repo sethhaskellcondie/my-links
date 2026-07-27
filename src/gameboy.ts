@@ -2,6 +2,7 @@
 // link menu on a 4-shade green dot-matrix screen. Recreated from the design
 // handoff (design_handoff_retro_crt_mobile/README.md, concept 1B).
 
+import { setChannel } from "./channel";
 import { el } from "./dom";
 import { hiddenLink, links, type Link } from "./links";
 import { wireQrTrigger } from "./qr";
@@ -179,6 +180,8 @@ export function createGameboy(): HTMLDivElement {
   const setPhase = (next: Phase) => {
     phase = next;
     gb.dataset.phase = next;
+    // Anything short of a dark screen counts as tuned to the handheld.
+    setChannel(next === "off" || next === "poweringOff" ? "off" : "game_boy");
   };
 
   const setSel = (index: number, focus = true) => {

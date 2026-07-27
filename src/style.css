@@ -4,7 +4,7 @@
    picture tube with scanlines + vignette, an NES stripe, a start menu of
    links, and a POWER button that collapses / warms up the picture.
    Built in vanilla CSS to match the project's stack. See main.ts for the
-   small amount of state (power on/off, boot, channel) that drives it.
+   small amount of state (power on/off, boot, channel, volume) that drives it.
    =========================================================================== */
 
 :root {
@@ -362,10 +362,12 @@ body {
   opacity: 0.6;
 }
 
-.channel {
+/* On-screen indicators. Both sit along the bottom of the tube — VOL in the
+   left corner, CH in the right — and both cut in and out instantly. */
+.channel,
+.volume {
   position: absolute;
   bottom: 34px;
-  right: 42px;
   z-index: 11;
   pointer-events: none;
   font-family: var(--font-pixel);
@@ -378,7 +380,17 @@ body {
   opacity: 0;
   /* No transition — instant on, instant cut. */
 }
-.tv.is-tuned .channel {
+.channel {
+  right: 42px;
+}
+.volume {
+  left: 42px;
+}
+/* CH and VOL both appear on power-up; VOL also flashes on every volume
+   press, but never over a dark screen. */
+.tv.is-tuned .channel,
+.tv.is-tuned .volume,
+.tv.is-vol:not(.is-off) .volume {
   opacity: 1;
 }
 
@@ -389,6 +401,15 @@ body {
   align-items: center;
   margin-top: 14px;
   padding: 0 10px;
+}
+
+/* VOL and POWER ride together at the right end of the chin. Top-aligned, so
+   POWER lines up with the round volume buttons rather than centring itself
+   against the pad's "Vol" caption below them. */
+.chin__controls {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
 }
 
 .brand {
@@ -436,6 +457,64 @@ body {
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #6a655d;
+}
+
+/* ---- Volume buttons -----------------------------------------------------
+   A pair on each bezel: the chin in landscape, the knob panel in portrait.
+   Only one bezel is on screen at a time. */
+.volpad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.volpad__buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.volpad__btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #46423c, #211e1a 62%, #12100d);
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+.volpad__btn:active {
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.7);
+}
+.volpad__btn:focus-visible {
+  outline: 2px solid var(--nes-red);
+  outline-offset: 2px;
+}
+
+.volpad__tri {
+  width: 10px;
+  height: 8px;
+  background: #c9c7c2;
+}
+.volpad__tri--up {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.volpad__tri--down {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.volpad__label {
+  font-family: var(--font-cond);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: #6a655d;
 }
@@ -515,10 +594,16 @@ body {
   .menu__start {
     font-size: 18px;
   }
-  .channel {
+  .channel,
+  .volume {
     font-size: 28px;
     bottom: 24px;
+  }
+  .channel {
     right: 24px;
+  }
+  .volume {
+    left: 24px;
   }
 }
 
@@ -1249,10 +1334,16 @@ body {
     margin-top: 30px;
     font-size: 14px;
   }
-  .channel {
+  .channel,
+  .volume {
     font-size: 22px;
     bottom: 20px;
+  }
+  .channel {
     right: 20px;
+  }
+  .volume {
+    left: 20px;
   }
 
   /* ---- Knob panel ---- */
