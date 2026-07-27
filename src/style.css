@@ -276,6 +276,41 @@ body {
   color: var(--select);
 }
 
+/* ---- Broadcast (the text-only channels) --------------------------------
+   Channels 4 and 5 drop the title and the menu and leave a single message on
+   the static background. See channels.ts for what each one says. */
+.broadcast {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  /* Swapped for `flex` by .tube.is-text, which hides the hero and menu. */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 34px 44px;
+}
+
+.tube.is-text .broadcast {
+  display: flex;
+}
+.tube.is-text .hero,
+.tube.is-text .menu {
+  display: none;
+}
+
+.broadcast__text {
+  margin: 0;
+  max-width: 620px;
+  font-family: var(--font-pixel);
+  font-size: clamp(14px, 2.6vw, 22px);
+  line-height: 1.9;
+  text-align: center;
+  color: var(--link-label);
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.18),
+    0 0 26px rgba(197, 40, 23, 0.22);
+}
+
 /* ---- Power-state overlays (inside the screen) -------------------------- */
 .shutter {
   position: absolute;
@@ -594,6 +629,9 @@ body {
   }
   .menu__start {
     font-size: 18px;
+  }
+  .broadcast {
+    padding: 28px 20px;
   }
   .channel,
   .volume {
@@ -1334,6 +1372,15 @@ body {
   .menu__start {
     margin-top: 30px;
     font-size: 14px;
+  }
+
+  /* ---- Broadcast ---- */
+  .broadcast {
+    padding: 26px 16px;
+  }
+  .broadcast__text {
+    font-size: clamp(11px, 3.4vw, 18px);
+    line-height: 1.8;
   }
   .channel,
   .volume {

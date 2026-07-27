@@ -8,6 +8,7 @@ import {
   setChannel,
   stepChannel,
 } from "./channel";
+import { getChannelContent } from "./channels";
 import { el } from "./dom";
 import { createGameboy } from "./gameboy";
 import { hiddenLink, links, type Link } from "./links";
@@ -56,6 +57,27 @@ function createHero(): HTMLDivElement {
 
   hero.append(title, stripe);
   return hero;
+}
+
+/**
+ * The text-only picture: no title, no menu, just a message on the static
+ * background. Channels 4 and 5 fill it from channels.ts.
+ */
+function createBroadcast(): {
+  broadcast: HTMLDivElement;
+  setText: (text: string) => void;
+} {
+  const broadcast = el("div", "broadcast");
+
+  const text = el("p", "broadcast__text");
+  broadcast.append(text);
+
+  return {
+    broadcast,
+    setText: (value: string) => {
+      text.textContent = value;
+    },
+  };
 }
 
 function createMenu(): HTMLDivElement {
@@ -139,12 +161,25 @@ function createScreen(): HTMLDivElement {
   const screen = el("div", "screen");
 
   const tube = el("div", "tube");
+  const { broadcast, setText } = createBroadcast();
   tube.append(
     el("div", "scanlines"),
     el("div", "vignette"),
     createHero(),
     createMenu(),
+    broadcast,
   );
+
+  // What the tube shows follows the dial. "off" and the Game Doy leave the
+  // last picture in place — neither retunes the CRT, and powering back on
+  // returns to channel 3.
+  onChannelChange((value) => {
+    if (!isNumberedChannel(value)) return;
+
+    const content = getChannelContent(value);
+    if (content.type === "text") setText(content.text);
+    tube.classList.toggle("is-text", content.type === "text");
+  });
 
   // Power-state overlays (order = stacking within the screen).
   const shutterTop = el("div", "shutter shutter--top");
