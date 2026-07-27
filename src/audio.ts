@@ -1,8 +1,8 @@
-// Sound for the CRT: channel 3 hisses, and the set thunks as it powers down.
-// The hiss follows the volume knob; the thunk is fixed. Both elements are
-// built lazily, so neither file is fetched until something actually plays.
+// Sound for the CRT: every numbered channel hisses, and the set thunks as it
+// powers down. The hiss follows the volume knob; the thunk is fixed. Both
+// elements are built lazily, so neither file is fetched until it plays.
 
-import { getChannel, onChannelChange } from "./channel";
+import { isNumberedChannel, getChannel, onChannelChange } from "./channel";
 import { getVolume, onVolumeChange, type Volume } from "./volume";
 
 const STATIC_SRC = "/sound-effects/tv-static.mp3";
@@ -50,7 +50,7 @@ export function playTvOff(): void {
 function sync(): void {
   const volume = getVolume();
 
-  if (getChannel() !== 3 || volume === 0) {
+  if (!isNumberedChannel(getChannel()) || volume === 0) {
     staticLoop?.pause();
     return;
   }

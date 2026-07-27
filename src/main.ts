@@ -1,6 +1,13 @@
 import "./style.css";
 import { initAudio, playTvOff } from "./audio";
-import { getChannel, setChannel } from "./channel";
+import {
+  formatChannel,
+  getChannel,
+  isNumberedChannel,
+  onChannelChange,
+  setChannel,
+  stepChannel,
+} from "./channel";
 import { el } from "./dom";
 import { createGameboy } from "./gameboy";
 import { hiddenLink, links, type Link } from "./links";
@@ -146,7 +153,11 @@ function createScreen(): HTMLDivElement {
   const fade = el("div", "fade");
   const waves = el("div", "waves");
   const channel = el("div", "channel");
-  channel.textContent = "CH 03";
+  // Powering down leaves the last number on the dark screen rather than
+  // blanking it — the readout is hidden by then anyway.
+  onChannelChange((value) => {
+    if (isNumberedChannel(value)) channel.textContent = formatChannel(value);
+  });
 
   // Opposite corner from the CH indicator, sharing its show/hide rules.
   const volume = el("div", "volume");
@@ -171,21 +182,25 @@ function createScreen(): HTMLDivElement {
   return screen;
 }
 
-/** VOL − / + : two round bezel buttons, triangle down and triangle up. */
-function createVolumePad(): {
+/**
+ * A rocker pair — two round bezel buttons, triangle down then triangle up,
+ * under a caption. VOL and CH are the same control with different wiring.
+ * `name` reads out to assistive tech ("Channel up"); `caption` is the plate.
+ */
+function createPad(
+  name: string,
+  caption: string,
+): {
   pad: HTMLDivElement;
   up: HTMLButtonElement;
   down: HTMLButtonElement;
 } {
-  const pad = el("div", "volpad");
+  const pad = el("div", "pad");
 
   const makeButton = (direction: "up" | "down") => {
-    const button = el("button", "volpad__btn", { type: "button" });
-    button.setAttribute(
-      "aria-label",
-      direction === "up" ? "Volume up" : "Volume down",
-    );
-    const triangle = el("span", `volpad__tri volpad__tri--${direction}`);
+    const button = el("button", "pad__btn", { type: "button" });
+    button.setAttribute("aria-label", `${name} ${direction}`);
+    const triangle = el("span", `pad__tri pad__tri--${direction}`);
     triangle.setAttribute("aria-hidden", "true");
     button.append(triangle);
     return button;
@@ -194,11 +209,11 @@ function createVolumePad(): {
   const down = makeButton("down");
   const up = makeButton("up");
 
-  const buttons = el("div", "volpad__buttons");
+  const buttons = el("div", "pad__buttons");
   buttons.append(down, up);
 
-  const label = el("span", "volpad__label");
-  label.textContent = "Vol";
+  const label = el("span", "pad__label");
+  label.textContent = caption;
   label.setAttribute("aria-hidden", "true");
 
   pad.append(buttons, label);
@@ -206,21 +221,24 @@ function createVolumePad(): {
 }
 
 /**
- * Wire the VOL buttons to the volume state and the on-screen readout. The
- * readout borrows the CH indicator's rules — instant on, 5s, instant cut —
- * appearing on power-up (via `is-tuned`) and again on every volume press.
+ * Wire a rocker pair to a stepper and flash its on-screen readout. Both
+ * readouts follow the same rules — instant on, 5s, instant cut — appearing on
+ * power-up (via `is-tuned`) and again on every press of their own buttons.
+ * `osdClass` is the class on `tv` that CSS keys the readout off.
  */
-function wireVolume(
+function wirePad(
   tv: HTMLDivElement,
   pads: { up: HTMLButtonElement; down: HTMLButtonElement }[],
+  step: (delta: number) => void,
+  osdClass: string,
 ): void {
   let osdTimer: number | undefined;
 
   const nudge = (delta: number) => {
-    stepVolume(delta);
+    step(delta);
     clearTimeout(osdTimer);
-    tv.classList.add("is-vol");
-    osdTimer = window.setTimeout(() => tv.classList.remove("is-vol"), 5000);
+    tv.classList.add(osdClass);
+    osdTimer = window.setTimeout(() => tv.classList.remove(osdClass), 5000);
   };
 
   pads.forEach(({ up, down }) => {
@@ -246,11 +264,12 @@ function createPowerButton(): HTMLButtonElement {
 }
 
 /**
- * Landscape bezel: brand plate on the left, with the volume buttons and the
- * power button grouped together on the right.
+ * Landscape bezel: brand plate on the left, with the channel and volume
+ * rockers and the power button grouped together on the right.
  */
 function createChin(
   power: HTMLButtonElement,
+  channelPad: HTMLDivElement,
   volumePad: HTMLDivElement,
 ): HTMLDivElement {
   const chin = el("div", "chin");
@@ -260,7 +279,7 @@ function createChin(
   wireQrTrigger(brand);
 
   const controls = el("div", "chin__controls");
-  controls.append(volumePad, power);
+  controls.append(channelPad, volumePad, power);
 
   chin.append(brand, controls);
   return chin;
@@ -290,28 +309,22 @@ function createAntenna(): HTMLDivElement {
 }
 
 /**
- * Portrait only: a decorative TUNE knob, the model name, and the working
- * volume buttons where the matching VOL knob used to be. Only the decorative
- * parts are hidden from assistive tech — the buttons are real controls.
+ * Portrait only: the working CH rocker where the decorative TUNE knob used to
+ * be, the model name, and the VOL rocker that replaced its own knob earlier.
+ * Only the model plate is hidden from assistive tech — the rest are real
+ * controls.
  */
-function createKnobs(volumePad: HTMLDivElement): HTMLDivElement {
+function createKnobs(
+  channelPad: HTMLDivElement,
+  volumePad: HTMLDivElement,
+): HTMLDivElement {
   const knobs = el("div", "knobs");
-
-  const makeKnob = (name: string) => {
-    const group = el("div", "knob-group");
-    group.setAttribute("aria-hidden", "true");
-    const dial = el("span", "knob");
-    const label = el("span", "knob__label");
-    label.textContent = name;
-    group.append(dial, label);
-    return group;
-  };
 
   const model = el("span", "knobs__model");
   model.setAttribute("aria-hidden", "true");
   model.textContent = "FD - 42 Watchmaan";
 
-  knobs.append(makeKnob("Tune"), model, volumePad);
+  knobs.append(channelPad, model, volumePad);
   return knobs;
 }
 
@@ -325,7 +338,32 @@ function renderHidden(root: HTMLDivElement): void {
   root.append(page);
 }
 
-function render(root: HTMLDivElement): void {
+/**
+ * Roll-10 loads only: both devices exist in the DOM but CSS shows just one, so
+ * the channel has to follow the rotation. Portrait hands over to the Game Doy;
+ * landscape hands back to the TV on channel 3.
+ */
+function wireRotation(tv: HTMLDivElement): void {
+  const portrait = window.matchMedia("(orientation: portrait)");
+
+  const retune = () => {
+    if (portrait.matches) {
+      setChannel("game_boy");
+      return;
+    }
+    // The set may have been powered down before the rotation. Channel 3 means
+    // it's on, so clear the power-off classes too — otherwise the TV comes
+    // back to a dark screen that is nonetheless hissing.
+    tv.classList.remove("is-off", "is-booting", "is-tuned");
+    setChannel(3);
+  };
+
+  portrait.addEventListener("change", retune);
+  retune();
+}
+
+/** Builds the TV page and returns the shell, for callers that wire to it. */
+function render(root: HTMLDivElement): HTMLDivElement {
   root.replaceChildren();
 
   const page = el("div", "page");
@@ -336,25 +374,29 @@ function render(root: HTMLDivElement): void {
   // same state.
   const chinPower = createPowerButton();
   const topPower = createPowerButton();
-  const chinVolume = createVolumePad();
-  const knobVolume = createVolumePad();
+  const chinVolume = createPad("Volume", "Vol");
+  const knobVolume = createPad("Volume", "Vol");
+  const chinChannel = createPad("Channel", "Ch");
+  const knobChannel = createPad("Channel", "Ch");
 
   tv.append(
     createAntenna(),
     createTopBar(topPower),
     createScreen(),
-    createChin(chinPower, chinVolume.pad),
-    createKnobs(knobVolume.pad),
+    createChin(chinPower, chinChannel.pad, chinVolume.pad),
+    createKnobs(knobChannel.pad, knobVolume.pad),
   );
   wirePower(tv, [chinPower, topPower]);
-  wireVolume(tv, [chinVolume, knobVolume]);
+  wirePad(tv, [chinVolume, knobVolume], stepVolume, "is-vol");
+  wirePad(tv, [chinChannel, knobChannel], stepChannel, "is-ch");
 
   page.append(createQrSlot(), tv);
   root.append(page);
+  return tv;
 }
 
 if (app) {
-  render(app);
+  const tv = render(app);
   initAudio();
   setChannel(3); // the CRT starts powered on and tuned in
 
@@ -364,6 +406,6 @@ if (app) {
   if (roll === 10) {
     app.classList.add("has-hidden");
     renderHidden(app);
-    setChannel("game_boy");
+    wireRotation(tv);
   }
 }
