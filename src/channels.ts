@@ -23,9 +23,9 @@ export const channels: ChannelContent[] = [
     {
         channel: 4,
         type: "text",
-        text: `Shame on the industry for being so anti-consumer. 
+        text: `Boo the industry for removing physical media options! 
         
-        We deserve a physical media option!`
+        Sony may have gone first but I suspect Xbox is heading in this direction and Nintendo keycards suck!`
     },
     {
         channel: 5,
