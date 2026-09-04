@@ -41,6 +41,16 @@ const allLinks: Link[] = [
     url: "https://twitch.tv/sethhaskell",
   },
   {
+    name: "Bluesky",
+    verb: "Follow",
+    url: "https://bsky.app/profile/sethhaskelllive.bsky.social",
+  },
+  {
+    name: "MY Game Collection",
+    verb: "Explore",
+    url: "https://pensieve.sethcondie.com/",
+  },
+  {
     name: "Stream Achievements",
     verb: "Monitor",
     url: "https://docs.google.com/spreadsheets/d/1zIik-mvDE7gpzniNk3TZisPlVCBe2htASHVdHJqibvs",
